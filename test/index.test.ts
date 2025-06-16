@@ -6,10 +6,55 @@ import fastify, { FastifyInstance } from "fastify";
 import { oidcProvider } from "@titorelli-org/fastify-oidc-provider";
 import { protectedRoutes } from "@titorelli-org/fastify-protected-routes";
 import { JwksStore } from "@titorelli-org/jwks-store";
-import pino from "pino";
+import pino, { Logger } from "pino";
 import { oidcInterceptor } from "../src/lib/oidcInterceptor";
 import { existsSync, unlinkSync } from "node:fs";
 import { ClientRepositoryYaml } from "../src/lib/ClientRepositoryYaml";
+
+const setupServer = async (logger: Logger) => {
+  const app = fastify({
+    loggerInstance: logger,
+  });
+
+  await app.register(protectedRoutes, {
+    origin: "http://localhost:3000",
+    authorizationServers: ["http://localhost:3000/oidc"],
+    async checkToken() {
+      return true;
+    },
+    logger,
+  });
+
+  await app.register(oidcProvider, {
+    origin: "http://localhost:3000",
+    jwksStore: new JwksStore(path.join(process.cwd(), "/data/jwks.json")),
+    logger,
+  });
+
+  app.get("/public", { config: { protected: false } }, () => "Public route");
+
+  app.get(
+    "/protected",
+    { config: { protected: true } },
+    () => "Protected route",
+  );
+
+  app.post(
+    "/protected",
+    { config: { protected: true } },
+    () => "Protected route",
+  );
+
+  app.get<{ Params: { arg: string } }>(
+    "/protected/:arg",
+    { config: { protected: true } },
+    ({ params }) => `Protected route ${params.arg}`,
+  );
+
+  await app.listen({ port: 3000 });
+
+  return app;
+};
 
 suite("axios-oidc-interceptor", async () => {
   const logger = pino();
@@ -26,46 +71,7 @@ suite("axios-oidc-interceptor", async () => {
   });
 
   await beforeEach(async () => {
-    app = fastify({
-      loggerInstance: logger,
-    });
-
-    await app.register(protectedRoutes, {
-      origin: "http://localhost:3000",
-      authorizationServers: ["http://localhost:3000/oidc"],
-      async checkToken() {
-        return true;
-      },
-      logger,
-    });
-
-    await app.register(oidcProvider, {
-      origin: "http://localhost:3000",
-      jwksStore: new JwksStore(path.join(process.cwd(), "/data/jwks.json")),
-      logger,
-    });
-
-    app.get("/public", { config: { protected: false } }, () => "Public route");
-
-    app.get(
-      "/protected",
-      { config: { protected: true } },
-      () => "Protected route",
-    );
-
-    app.post(
-      "/protected",
-      { config: { protected: true } },
-      () => "Protected route",
-    );
-
-    app.get<{ Params: { arg: string } }>(
-      "/protected/:arg",
-      { config: { protected: true } },
-      ({ params }) => `Protected route ${params.arg}`,
-    );
-
-    await app.listen({ port: 3000 });
+    app = await setupServer(logger);
   });
 
   await beforeEach(async () => {
