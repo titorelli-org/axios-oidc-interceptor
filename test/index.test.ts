@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { test, suite, before, after, beforeEach, afterEach } from "node:test";
+import { test, suite, beforeEach, afterEach } from "node:test";
 import path from "node:path";
 import axios, { AxiosInstance } from "axios";
 import fastify, { FastifyInstance } from "fastify";
