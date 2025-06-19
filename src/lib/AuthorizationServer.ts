@@ -33,7 +33,10 @@ export class AuthorizationServer {
       if (await client.getIsRegistered()) {
         return client;
       } else {
-        await this.clientRepository.deleteByName(clientMetadata.client_name);
+        await this.clientRepository.deleteByName(
+          this.issuer,
+          clientMetadata.client_name,
+        );
 
         return this.clientRegistration(clientMetadata);
       }
@@ -44,6 +47,7 @@ export class AuthorizationServer {
 
   private async getSavedClient(clientMetadata: InitialClientMetadata) {
     const client = await this.clientRepository.getByName(
+      this.issuer,
       clientMetadata.client_name,
     );
 

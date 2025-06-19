@@ -1,11 +1,11 @@
 import { Client } from "oauth4webapi";
 
 export interface ClientRepository {
-  getByName(clientName: string): Promise<Client | null>;
+  getByName(issuer: string | URL, clientName: string): Promise<Client | null>;
 
   get(clientId: string): Promise<Client | null>;
 
   create(client: Client): Promise<void>;
 
-  deleteByName(clientName: string): Promise<void>;
+  deleteByName(issuer: string | URL, clientName: string): Promise<void>;
 }

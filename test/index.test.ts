@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { test, suite, beforeEach, afterEach } from "node:test";
+import { test, suite, beforeEach, afterEach, after } from "node:test";
 import path from "node:path";
 import axios, { AxiosInstance } from "axios";
 import fastify, { FastifyInstance } from "fastify";
@@ -91,13 +91,13 @@ suite("axios-oidc-interceptor", async () => {
   await test("access public route", async () => {
     const { data } = await ax.get<string>("/public");
 
-    assert(data === "Public route");
+    assert.equal(data, "Public route");
   });
 
   await test("access protected GET route", async () => {
     const { data } = await ax.get<string>("/protected");
 
-    assert(data === "Protected route");
+    assert.equal(data, "Protected route");
   });
 
   await test("access protected POST route", async () => {
@@ -105,13 +105,13 @@ suite("axios-oidc-interceptor", async () => {
       dummy: true,
     });
 
-    assert(data === "Protected route");
+    assert.equal(data, "Protected route");
   });
 
   await test("access protected GET route with params", async () => {
     const { data } = await ax.get<string>("/protected/123");
 
-    assert(data === "Protected route 123");
+    assert.equal(data, "Protected route 123");
   });
 
   await test("concurrent access to single protected resource", async () => {
@@ -122,10 +122,10 @@ suite("axios-oidc-interceptor", async () => {
       ax.get("/protected"),
     ]);
 
-    assert(r1.data === "Protected route");
-    assert(r2.data === "Protected route");
-    assert(r3.data === "Protected route");
-    assert(r4.data === "Protected route");
+    assert.equal(r1.data, "Protected route");
+    assert.equal(r2.data, "Protected route");
+    assert.equal(r3.data, "Protected route");
+    assert.equal(r4.data, "Protected route");
   });
 
   await afterEach(async () => {

@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import type { Client } from "oauth4webapi";
 import { mkdirpSync } from "mkdirp";
 import * as YAML from "yaml";
+import * as uuid from "uuid";
 import type { ClientRepository } from "./ClientRepository";
 
 export class ClientRepositoryYaml implements ClientRepository {
@@ -11,16 +12,14 @@ export class ClientRepositoryYaml implements ClientRepository {
     mkdirpSync(dirname(filename));
   }
 
-  public async getByName(clientName: string): Promise<Client | null> {
+  public async getByName(
+    issuer: string | URL,
+    clientName: string,
+  ): Promise<Client | null> {
     const clients = await this.read();
+    const clientId = this.getClientId(issuer, clientName);
 
-    for (const client of clients) {
-      if (client.client_name === clientName) {
-        return client;
-      }
-    }
-
-    return null;
+    return clients.find((c) => c.client_id === clientId) ?? null;
   }
 
   public async get(clientId: string): Promise<Client | null> {
@@ -43,16 +42,30 @@ export class ClientRepositoryYaml implements ClientRepository {
     await this.save(clients);
   }
 
-  public async deleteByName(clientName: string): Promise<void> {
+  public async deleteByName(
+    issuer: string | URL,
+    clientName: string,
+  ): Promise<void> {
+    const clientId = this.getClientId(issuer, clientName);
+
     let clients = await this.read();
 
-    clients = clients.filter((c) => c.client_name !== clientName);
+    clients = clients.filter((c) => c.client_id !== clientId);
 
     if (clients.length === 0) {
       await unlink(this.filename);
     } else {
       await this.save(clients);
     }
+  }
+
+  private getClientId(issuer: string | URL, clientName: string) {
+    const issuerNamespace = uuid.v5(
+      issuer.toString(),
+      "5ec17d33-2d73-4a1c-9bac-88a4e527f273",
+    );
+
+    return `${clientName}-${uuid.v5(clientName, issuerNamespace)}`;
   }
 
   private async read() {
