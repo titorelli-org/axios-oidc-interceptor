@@ -1,33 +1,43 @@
 import assert from "node:assert";
-import { test, suite, beforeEach, afterEach, after } from "node:test";
+import { afterEach, beforeEach, after, suite, test } from "node:test";
 import path from "node:path";
 import axios, { AxiosInstance } from "axios";
 import fastify, { FastifyInstance } from "fastify";
 import { oidcProvider } from "@titorelli-org/fastify-oidc-provider";
-import { protectedRoutes } from "@titorelli-org/fastify-protected-routes";
+import {
+  protectedRoutes,
+  TokenValidator,
+} from "@titorelli-org/fastify-protected-routes";
 import { JwksStore } from "@titorelli-org/jwks-store";
 import pino, { Logger } from "pino";
-import { oidcInterceptor } from "../src/lib/oidcInterceptor";
 import { existsSync, unlinkSync } from "node:fs";
-import { ClientRepositoryYaml } from "../src/lib/ClientRepositoryYaml";
+import { ClientRepositoryYaml, oidcInterceptor } from "../src";
 
 const setupServer = async (logger: Logger) => {
   const app = fastify({
     loggerInstance: logger,
   });
 
+  const jwksStore = new JwksStore(path.join(process.cwd(), "/data/jwks.json"));
+
+  const tokenValidator = new TokenValidator({
+    jwksStore,
+    testSubject: () => true,
+    testAudience: () => true,
+    logger,
+  });
+
   await app.register(protectedRoutes, {
     origin: "http://localhost:3000",
     authorizationServers: ["http://localhost:3000/oidc"],
-    async checkToken() {
-      return true;
-    },
+    checkToken: (token, url, supportedScopes) =>
+      tokenValidator.validate(token, url, supportedScopes),
     logger,
   });
 
   await app.register(oidcProvider, {
     origin: "http://localhost:3000",
-    jwksStore: new JwksStore(path.join(process.cwd(), "/data/jwks.json")),
+    jwksStore,
     logger,
   });
 
@@ -70,11 +80,11 @@ suite("axios-oidc-interceptor", async () => {
     }
   });
 
-  await beforeEach(async () => {
+  beforeEach(async () => {
     app = await setupServer(logger);
   });
 
-  await beforeEach(async () => {
+  beforeEach(() => {
     ax = axios.create({ baseURL: "http://localhost:3000" });
 
     oidcInterceptor(ax, {
@@ -128,7 +138,9 @@ suite("axios-oidc-interceptor", async () => {
     assert.equal(r4.data, "Protected route");
   });
 
-  await afterEach(async () => {
+  afterEach(async () => {
     await app.close();
   });
+
+  after(() => process.exit(0));
 });

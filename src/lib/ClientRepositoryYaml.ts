@@ -8,7 +8,7 @@ import * as uuid from "uuid";
 import type { ClientRepository } from "./ClientRepository";
 
 export class ClientRepositoryYaml implements ClientRepository {
-  constructor(private readonly filename) {
+  constructor(private readonly filename: string) {
     mkdirpSync(dirname(filename));
   }
 

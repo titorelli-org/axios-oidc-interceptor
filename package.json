@@ -21,8 +21,8 @@
   "license": "AGPL-3.0-only",
   "description": "Axios interceptor for protected resources",
   "devDependencies": {
-    "@titorelli-org/fastify-protected-routes": "^0.3.0",
-    "@titorelli-org/fastify-oidc-provider": "^1.0.0",
+    "@titorelli-org/fastify-protected-routes": "^0.5.0",
+    "@titorelli-org/fastify-oidc-provider": "^1.1.0",
     "@types/node": "^24.0.1",
     "fastify": "^5.4.0",
     "pino": "^9.7.0",
@@ -32,7 +32,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@titorelli-org/jwks-store": "^0.1.1",
+    "@titorelli-org/jwks-store": "^0.2.0",
     "axios": "^1.9.0",
     "mkdirp": "^3.0.1",
     "oauth4webapi": "^3.5.2",
