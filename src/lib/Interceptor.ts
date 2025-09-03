@@ -87,13 +87,13 @@ export class OidcInterceptor {
   };
 
   private onResponseRejected = async (error) => {
-    if (!isAxiosError(error)) return error;
+    if (!isAxiosError(error)) throw error;
 
     if (
       error.status !== 401 ||
       error.response.headers["www-authenticate"] == null
     ) {
-      return error;
+      throw error;
     }
 
     try {
@@ -148,9 +148,7 @@ export class OidcInterceptor {
     } catch (err) {
       this.logger.error(err);
 
-      // Suppress error
-
-      return error;
+      throw error;
     }
   };
 
