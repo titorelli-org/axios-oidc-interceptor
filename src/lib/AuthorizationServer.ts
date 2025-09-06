@@ -24,7 +24,10 @@ export class AuthorizationServer {
     return this.as;
   }
 
-  public async ensureClientRegistered(clientMetadata: InitialClientMetadata) {
+  public async ensureClientRegistered(
+    clientMetadata: InitialClientMetadata,
+    initialAccessToken?: string,
+  ) {
     await this.ready;
 
     const client = await this.getSavedClient(clientMetadata);
@@ -38,11 +41,11 @@ export class AuthorizationServer {
           clientMetadata.client_name,
         );
 
-        return this.clientRegistration(clientMetadata);
+        return this.clientRegistration(clientMetadata, initialAccessToken);
       }
     }
 
-    return this.clientRegistration(clientMetadata);
+    return this.clientRegistration(clientMetadata, initialAccessToken);
   }
 
   private async getSavedClient(clientMetadata: InitialClientMetadata) {
@@ -58,8 +61,14 @@ export class AuthorizationServer {
     return new RegisteredClient(client, this);
   }
 
-  private async clientRegistration(clientMetadata: InitialClientMetadata) {
-    const client = await this.actuallyClientRegistration(clientMetadata);
+  private async clientRegistration(
+    clientMetadata: InitialClientMetadata,
+    initialAccessToken?: string,
+  ) {
+    const client = await this.actuallyClientRegistration(
+      clientMetadata,
+      initialAccessToken,
+    );
 
     await this.clientRepository.create(client);
 
@@ -81,7 +90,10 @@ export class AuthorizationServer {
     Reflect.set(this, "as", await processDiscoveryResponse(this.issuer, resp));
   }
 
-  private async actuallyClientRegistration(client: InitialClientMetadata) {
+  private async actuallyClientRegistration(
+    client: InitialClientMetadata,
+    initialAccessToken?: string,
+  ) {
     const {
       dynamicClientRegistrationRequest,
       processDynamicClientRegistrationResponse,
@@ -97,6 +109,7 @@ export class AuthorizationServer {
       },
       {
         [allowInsecureRequests]: true,
+        initialAccessToken,
       },
     );
 

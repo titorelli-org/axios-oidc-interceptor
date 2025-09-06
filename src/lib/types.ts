@@ -8,6 +8,7 @@ export type InitialClientMetadata = {
 export type OidcInterceptorOptions = {
   client: InitialClientMetadata;
   clientRepository: ClientRepository;
+  initialAccessToken?: string;
   logger: Logger;
 };
 

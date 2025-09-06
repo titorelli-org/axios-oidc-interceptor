@@ -25,14 +25,21 @@ export class OidcInterceptor {
     Promise<TokenEndpointResponse>
   >();
   private readonly clientRepository: ClientRepository;
+  private readonly initialAccessToken?: string;
   private readonly logger: Logger;
 
   constructor(
     private readonly axiosInstance: AxiosInstance,
-    { client, clientRepository, logger }: OidcInterceptorOptions,
+    {
+      client,
+      clientRepository,
+      initialAccessToken,
+      logger,
+    }: OidcInterceptorOptions,
   ) {
     this.initialClient = client;
     this.clientRepository = clientRepository;
+    this.initialAccessToken = initialAccessToken;
     this.logger = logger;
     this.requestInterceptorId = this.axiosInstance.interceptors.request.use(
       this.onRequestFulfilled,
@@ -127,7 +134,10 @@ export class OidcInterceptor {
               ),
             );
 
-            const client = await as.ensureClientRegistered(this.initialClient);
+            const client = await as.ensureClientRegistered(
+              this.initialClient,
+              this.initialAccessToken,
+            );
 
             const token = await client.getResourceAccessToken(resource);
 
