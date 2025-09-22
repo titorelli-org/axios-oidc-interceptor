@@ -4,7 +4,6 @@ import { dirname } from "node:path";
 import type { Client } from "oauth4webapi";
 import { mkdirpSync } from "mkdirp";
 import * as YAML from "yaml";
-import * as uuid from "uuid";
 import type { ClientRepository } from "./ClientRepository";
 
 export class ClientRepositoryYaml implements ClientRepository {
@@ -17,7 +16,7 @@ export class ClientRepositoryYaml implements ClientRepository {
     clientName: string,
   ): Promise<Client | null> {
     const clients = await this.read();
-    const clientId = this.getClientId(issuer, clientName);
+    const clientId = await this.getClientId(issuer, clientName);
 
     return clients.find((c) => c.client_id === clientId) ?? null;
   }
@@ -46,7 +45,7 @@ export class ClientRepositoryYaml implements ClientRepository {
     issuer: string | URL,
     clientName: string,
   ): Promise<void> {
-    const clientId = this.getClientId(issuer, clientName);
+    const clientId = await this.getClientId(issuer, clientName);
 
     let clients = await this.read();
 
@@ -59,7 +58,9 @@ export class ClientRepositoryYaml implements ClientRepository {
     }
   }
 
-  private getClientId(issuer: string | URL, clientName: string) {
+  private async getClientId(issuer: string | URL, clientName: string) {
+    const uuid = await import("uuid");
+
     const issuerNamespace = uuid.v5(
       issuer.toString(),
       "5ec17d33-2d73-4a1c-9bac-88a4e527f273",
