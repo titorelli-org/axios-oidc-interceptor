@@ -30,6 +30,7 @@ const setupServer = async (logger: Logger) => {
   await app.register(protectedRoutes, {
     origin: "http://localhost:3000",
     authorizationServers: ["http://localhost:3000/oidc"],
+    allRoutesRequireAuthorization: true,
     checkToken: (token, url, supportedScopes) =>
       tokenValidator.validate(token, url, supportedScopes),
     logger,
@@ -37,6 +38,7 @@ const setupServer = async (logger: Logger) => {
 
   await app.register(oidcProvider, {
     origin: "http://localhost:3000",
+    initialAccessToken: '--foo--',
     jwksStore,
     logger,
   });
@@ -94,6 +96,7 @@ suite("axios-oidc-interceptor", async () => {
       clientRepository: new ClientRepositoryYaml(
         path.join(process.cwd(), "/data/clients.yaml"),
       ),
+      initialAccessToken: '--foo--',
       logger,
     });
   });

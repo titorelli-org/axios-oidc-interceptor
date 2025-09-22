@@ -3,6 +3,7 @@ import { InitialClientMetadata } from "./types";
 import type { Logger } from "pino";
 import { RegisteredClient } from "./RegistredClient";
 import type { ClientRepository } from "./ClientRepository";
+import { fixProtocol } from "./fixProtocol";
 
 export class AuthorizationServer {
   private readonly as: OauthAuthorzationServer;
@@ -87,7 +88,9 @@ export class AuthorizationServer {
       [allowInsecureRequests]: true,
     });
 
-    Reflect.set(this, "as", await processDiscoveryResponse(this.issuer, resp));
+    const as = fixProtocol(await processDiscoveryResponse(this.issuer, resp));
+
+    Reflect.set(this, "as", as);
   }
 
   private async actuallyClientRegistration(
