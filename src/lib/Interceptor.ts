@@ -108,7 +108,7 @@ export class OidcInterceptor {
         error.response.headers["www-authenticate"],
       );
 
-      if (type !== "Bearer" || resource_metadata == null) return error;
+      if (type !== "Bearer" || resource_metadata == null) throw error;
 
       const resource = await this.getResourceFromConfig(error.config);
 
@@ -140,6 +140,12 @@ export class OidcInterceptor {
             );
 
             const token = await client.getResourceAccessToken(resource);
+
+            if (token == null) {
+              reject(error);
+
+              return;
+            }
 
             await this.saveTokenForResource(resource, token);
 

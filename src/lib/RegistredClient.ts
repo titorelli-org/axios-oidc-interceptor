@@ -1,4 +1,4 @@
-import { type Client } from "oauth4webapi";
+import type { ClientAuth, Client } from "oauth4webapi";
 import type { AuthorizationServer } from "./AuthorizationServer";
 
 export class RegisteredClient {
@@ -16,16 +16,29 @@ export class RegisteredClient {
       clientCredentialsGrantRequest,
       processClientCredentialsResponse,
       ClientSecretBasic,
+      ClientSecretJwt,
       allowInsecureRequests,
     } = await import("oauth4webapi");
 
-    const resp = await clientCredentialsGrantRequest(
-      this.as.unwrap(),
-      { client_id: this.c.client_id },
-      ClientSecretBasic(this.c.client_secret),
-      new URLSearchParams({ resource }),
-      { [allowInsecureRequests]: true },
-    );
+    const makeRequest = (clientAuth: ClientAuth) => {
+      return clientCredentialsGrantRequest(
+        this.as.unwrap(),
+        { client_id: this.c.client_id },
+        clientAuth,
+        new URLSearchParams({ resource }),
+        { [allowInsecureRequests]: true },
+      );
+    };
+
+    let resp = await makeRequest(ClientSecretBasic(this.c.client_secret));
+
+    if (resp.status === 401) {
+      resp = await makeRequest(ClientSecretJwt(this.c.client_secret));
+    }
+
+    if (resp.status === 401) {
+      return null;
+    }
 
     return processClientCredentialsResponse(this.as.unwrap(), this.c, resp);
   }
