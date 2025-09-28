@@ -93,7 +93,7 @@ export class AuthorizationServer {
 
     await this.clientRepository.create(client);
 
-    return new RegisteredClient(client, this);
+    return new RegisteredClient(client, this, this.logger);
   }
 
   private async initialize() {
