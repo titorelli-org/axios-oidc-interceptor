@@ -70,17 +70,25 @@ export class ClientRepositoryYaml implements ClientRepository {
   }
 
   private async read() {
+    console.log("ClientRepository", "read()");
+
     if (existsSync(this.filename)) {
+      console.log("ClientRepository", "existsSync()", true);
+
       const text = await readFile(this.filename, "utf8");
 
       return YAML.parse(text) as Client[];
     }
+
+    console.log("ClientRepository", "existsSync()", false);
 
     return [];
   }
 
   private async save(clients: Client[]) {
     const text = YAML.stringify(clients);
+
+    console.log("ClientRepository", "save()", { clients });
 
     await writeFile(this.filename, text, "utf-8");
   }

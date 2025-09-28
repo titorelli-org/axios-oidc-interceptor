@@ -1,3 +1,4 @@
+import type { Logger } from "pino";
 import type { ClientAuth, Client } from "oauth4webapi";
 import type { AuthorizationServer } from "./AuthorizationServer";
 
@@ -9,6 +10,7 @@ export class RegisteredClient {
       registration_access_token?: string;
     },
     private readonly as: AuthorizationServer,
+    private readonly logger: Logger,
   ) {}
 
   public async getResourceAccessToken(resource: string) {
@@ -19,6 +21,8 @@ export class RegisteredClient {
       ClientSecretJwt,
       allowInsecureRequests,
     } = await import("oauth4webapi");
+
+    this.logger.info({ resource }, "getResourceAccessToken");
 
     const makeRequest = (clientAuth: ClientAuth) => {
       return clientCredentialsGrantRequest(
@@ -32,8 +36,26 @@ export class RegisteredClient {
 
     let resp = await makeRequest(ClientSecretBasic(this.c.client_secret));
 
+    this.logger.info(
+      {
+        status: resp.status,
+        statusText: resp.statusText,
+        body: await resp.clone().text(),
+      },
+      "Basic response",
+    );
+
     if (resp.status === 401) {
       resp = await makeRequest(ClientSecretJwt(this.c.client_secret));
+
+      this.logger.info(
+        {
+          status: resp.status,
+          statusText: resp.statusText,
+          body: await resp.clone().text(),
+        },
+        "SecretJWT response",
+      );
     }
 
     if (resp.status === 401) {

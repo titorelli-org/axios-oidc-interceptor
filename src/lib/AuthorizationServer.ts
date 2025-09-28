@@ -31,16 +31,29 @@ export class AuthorizationServer {
   ) {
     await this.ready;
 
+    this.logger.info(
+      { clientMetadata, initialAccessToken },
+      "ensureClientRegistered()",
+    );
+
     const client = await this.getSavedClient(clientMetadata);
+
+    this.logger.info(client, "getSavedClient(clientMetadata)");
 
     if (client) {
       if (await client.getIsRegistered()) {
+        this.logger.info("Client is registered!");
+
         return client;
       } else {
+        this.logger.info("Client is not registered!");
+
         await this.clientRepository.deleteByName(
           this.issuer,
           clientMetadata.client_name,
         );
+
+        this.logger.info("Client removed from self-clients.yaml");
 
         return this.clientRegistration(clientMetadata, initialAccessToken);
       }
@@ -59,17 +72,24 @@ export class AuthorizationServer {
       return null;
     }
 
-    return new RegisteredClient(client, this);
+    return new RegisteredClient(client, this, this.logger);
   }
 
   private async clientRegistration(
     clientMetadata: InitialClientMetadata,
     initialAccessToken?: string,
   ) {
+    this.logger.info(
+      { clientMetadata, initialAccessToken },
+      "clientRegistration",
+    );
+
     const client = await this.actuallyClientRegistration(
       clientMetadata,
       initialAccessToken,
     );
+
+    this.logger.info(client, "actuallyClientRegistration()");
 
     await this.clientRepository.create(client);
 
@@ -89,6 +109,8 @@ export class AuthorizationServer {
     });
 
     const as = fixProtocol(await processDiscoveryResponse(this.issuer, resp));
+
+    this.logger.info({ as }, "initialize");
 
     Reflect.set(this, "as", as);
   }
