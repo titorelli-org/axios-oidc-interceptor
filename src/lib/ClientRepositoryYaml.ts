@@ -6,7 +6,35 @@ import { mkdirpSync } from "mkdirp";
 import * as YAML from "yaml";
 import type { ClientRepository } from "./ClientRepository";
 
+// Simple in-memory mutex implementation
+class Mutex {
+  private locked = false;
+  private queue: Array<() => void> = [];
+
+  async acquire(): Promise<() => void> {
+    return new Promise((resolve) => {
+      const release = () => {
+        this.locked = false;
+        const next = this.queue.shift();
+        if (next) {
+          this.locked = true;
+          next();
+        }
+      };
+
+      if (!this.locked) {
+        this.locked = true;
+        resolve(release);
+      } else {
+        this.queue.push(() => resolve(release));
+      }
+    });
+  }
+}
+
 export class ClientRepositoryYaml implements ClientRepository {
+  private readonly mutex = new Mutex();
+
   constructor(private readonly filename: string) {
     mkdirpSync(dirname(filename));
   }
@@ -34,27 +62,50 @@ export class ClientRepositoryYaml implements ClientRepository {
   }
 
   public async create(client: Client) {
-    const clients = await this.read();
+    const release = await this.mutex.acquire();
 
-    clients.push(client);
+    try {
+      const clients = await this.read();
 
-    await this.save(clients);
+      // Check if client already exists to prevent duplicates
+      const existingIndex = clients.findIndex(
+        (c) => c.client_id === client.client_id,
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing client
+        clients[existingIndex] = client;
+      } else {
+        // Add new client
+        clients.push(client);
+      }
+
+      await this.save(clients);
+    } finally {
+      release();
+    }
   }
 
   public async deleteByName(
     issuer: string | URL,
     clientName: string,
   ): Promise<void> {
-    const clientId = await this.getClientId(issuer, clientName);
+    const release = await this.mutex.acquire();
 
-    let clients = await this.read();
+    try {
+      const clientId = await this.getClientId(issuer, clientName);
 
-    clients = clients.filter((c) => c.client_id !== clientId);
+      let clients = await this.read();
 
-    if (clients.length === 0) {
-      await unlink(this.filename);
-    } else {
-      await this.save(clients);
+      clients = clients.filter((c) => c.client_id !== clientId);
+
+      if (clients.length === 0) {
+        await unlink(this.filename);
+      } else {
+        await this.save(clients);
+      }
+    } finally {
+      release();
     }
   }
 
