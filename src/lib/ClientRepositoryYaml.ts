@@ -43,22 +43,34 @@ export class ClientRepositoryYaml implements ClientRepository {
     issuer: string | URL,
     clientName: string,
   ): Promise<Client | null> {
-    const clients = await this.read();
-    const clientId = await this.getClientId(issuer, clientName);
+    const release = await this.mutex.acquire();
 
-    return clients.find((c) => c.client_id === clientId) ?? null;
+    try {
+      const clients = await this.read();
+      const clientId = await this.getClientId(issuer, clientName);
+
+      return clients.find((c) => c.client_id === clientId) ?? null;
+    } finally {
+      release();
+    }
   }
 
   public async get(clientId: string): Promise<Client | null> {
-    const clients = await this.read();
+    const release = await this.mutex.acquire();
 
-    for (const client of clients) {
-      if (client.client_id === clientId) {
-        return client;
+    try {
+      const clients = await this.read();
+
+      for (const client of clients) {
+        if (client.client_id === clientId) {
+          return client;
+        }
       }
-    }
 
-    return null;
+      return null;
+    } finally {
+      release();
+    }
   }
 
   public async create(client: Client) {
@@ -100,7 +112,9 @@ export class ClientRepositoryYaml implements ClientRepository {
       clients = clients.filter((c) => c.client_id !== clientId);
 
       if (clients.length === 0) {
-        await unlink(this.filename);
+        if (existsSync(this.filename)) {
+          await unlink(this.filename);
+        }
       } else {
         await this.save(clients);
       }
