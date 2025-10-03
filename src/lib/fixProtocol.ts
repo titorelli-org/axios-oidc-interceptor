@@ -12,6 +12,10 @@ export const fixProtocol = (as: any) => {
       }
 
       if (typeof value === "object") {
+        if (Array.isArray(value)) {
+          return [key, value.map(fixProtocol)];
+        }
+
         return [key, fixProtocol(value)];
       }
 

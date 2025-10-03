@@ -116,7 +116,7 @@ export class AuthorizationServer {
   }
 
   private async actuallyClientRegistration(
-    client: InitialClientMetadata,
+    clientReq: InitialClientMetadata,
     initialAccessToken?: string,
   ) {
     const {
@@ -128,7 +128,7 @@ export class AuthorizationServer {
     const resp = await dynamicClientRegistrationRequest(
       this.as,
       {
-        ...client,
+        ...clientReq,
         grant_types: ["authorization_code", "client_credentials"],
         redirect_uris: ["https://example.org/nonexistent"],
       },
@@ -138,6 +138,8 @@ export class AuthorizationServer {
       },
     );
 
-    return processDynamicClientRegistrationResponse(resp);
+    const clientResp = await processDynamicClientRegistrationResponse(resp);
+
+    return fixProtocol(clientResp);
   }
 }
