@@ -1,25 +1,6 @@
-export const fixProtocol = (as: any) => {
-  return Object.fromEntries(
-    Object.entries(as).map(([key, value]) => {
-      if (value == null) return [key, value];
+export const fixProtocol = (obj: any) => {
+  const text = JSON.stringify(obj);
+  const fixed = text.replace(/http:\/\//gi, "https://");
 
-      if (
-        typeof value === "string" &&
-        value.startsWith("http") &&
-        as.issuer.startsWith("https")
-      ) {
-        return [key, value.replace("http://", "https://")];
-      }
-
-      if (typeof value === "object") {
-        if (Array.isArray(value)) {
-          return [key, value.map(fixProtocol)];
-        }
-
-        return [key, fixProtocol(value)];
-      }
-
-      return [key, value];
-    }),
-  );
+  return JSON.parse(fixed);
 };
