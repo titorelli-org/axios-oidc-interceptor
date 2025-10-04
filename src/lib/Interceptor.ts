@@ -43,7 +43,6 @@ export class OidcInterceptor {
     this.logger = logger;
     this.requestInterceptorId = this.axiosInstance.interceptors.request.use(
       this.onRequestFulfilled,
-      this.onRequestRejected,
     );
     this.responseInterceptorId = this.axiosInstance.interceptors.response.use(
       this.onResponseFulfilled,
@@ -87,11 +86,7 @@ export class OidcInterceptor {
     return config;
   };
 
-  private onRequestRejected = () => {};
-
-  private onResponseFulfilled = (value: AxiosResponse) => {
-    return value;
-  };
+  private onResponseFulfilled = (value: AxiosResponse) => value;
 
   private onResponseRejected = async (error) => {
     if (!isAxiosError(error)) throw error;
@@ -116,7 +111,7 @@ export class OidcInterceptor {
 
       await tokenPromise;
 
-      if (!this.hasTokenForResource(resource)) {
+      if (!(await this.hasTokenForResource(resource))) {
         return this.retryRequest(error.config);
       }
 
