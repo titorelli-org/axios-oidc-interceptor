@@ -111,7 +111,7 @@ export class OidcInterceptor {
 
       await tokenPromise;
 
-      if (!(await this.hasTokenForResource(resource))) {
+      if (await this.hasTokenForResource(resource)) {
         return this.retryRequest(error.config);
       }
 
